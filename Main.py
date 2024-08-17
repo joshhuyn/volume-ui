@@ -1,4 +1,6 @@
 from tkinter import Button, Canvas, Label, StringVar, Tk, N, S, W, E
+import time
+import threading
 import pyvolume
 from PIL import Image, ImageTk
 
@@ -7,8 +9,6 @@ from PIL import Image, ImageTk
 
 CANVAS_WIDTH = 250
 CANVAS_HEIGHT = 250
-
-UPDATE_INTERVAL = 100
 
 #####
 
@@ -39,32 +39,22 @@ volumeContent = StringVar()
 volumeLabel = Label(window, textvariable=volumeContent)
 
 
-saveCounter = 0
-
-
-def savePos(event):
-    global lastX, lastY
-    lastX, lastY = event.x, event.y
-
-    global saveCounter
-    saveCounter = saveCounter + 1
-
-
 def getDrawnPixelCount():
     width = int(canvas["width"])
     height = int(canvas["height"])
     drawnCount = 0
 
-    test = 0
-
     for x in range(width):
         for y in range(height):
             ids = canvas.find_overlapping(x, y, x, y)
+
             if len(ids) > 0:
-                test = test + 1
-                index = ids[-1]
-                color = canvas.itemcget(index, "fill")
-                if color.upper() == "BLACK":
+                fill = canvas.itemcget(ids[-1], "fill").upper()
+
+                if len(ids) > 1 and fill == "WHITE" and canvas.itemcget(ids[-2], "fill").upper() == "BLACK":
+                    canvas.delete(ids[-2])
+
+                if fill == "BLACK":
                     drawnCount = drawnCount + 1
 
     return drawnCount
@@ -81,21 +71,18 @@ def updateVolume():
 
 
 def addLine(event):
-    canvas.create_line((lastX, lastY, event.x, event.y), fill=brushColor, width=5)
-    savePos(event)
-
-    global saveCounter
-    if saveCounter > UPDATE_INTERVAL:
-        updateVolume()
-        saveCounter = 0
-
+    if (brushColor.upper() == "BLACK"):
+        canvas.create_oval((event.x, event.y, event.x, event.y), fill=brushColor, outline=brushColor, width=5)
+    else:
+        ids = canvas.find_overlapping(event.x, event.y, event.x, event.y)
+        if len(ids) > 0:
+            canvas.delete(ids[-1])
 
 
 def addCanvas():
     canvas.pack()
 
     canvas.grid(column=0, row=0, sticky=(N, W, E))
-    canvas.bind("<Button-1>", savePos)
     canvas.bind("<B1-Motion>", addLine)
 
 
@@ -108,8 +95,17 @@ def addLabel():
     volumeLabel.grid(column=0, row=1, sticky=(N, W, S))
 
 
+def frameUpdate():
+    while True:
+        time.sleep(60 / 1000)
+        updateVolume()
+
+
 if __name__ == "__main__":
     addCanvas()
     addButtons()
     addLabel()
+
+    threading.Thread(target=frameUpdate).start()
+
     window.mainloop()
