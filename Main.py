@@ -10,6 +10,8 @@ from PIL import Image, ImageTk
 CANVAS_WIDTH = 250
 CANVAS_HEIGHT = 250
 
+BRUSH_WIDTH = 5
+
 #####
 
 
@@ -51,9 +53,6 @@ def getDrawnPixelCount():
             if len(ids) > 0:
                 fill = canvas.itemcget(ids[-1], "fill").upper()
 
-                if len(ids) > 1 and fill == "WHITE" and canvas.itemcget(ids[-2], "fill").upper() == "BLACK":
-                    canvas.delete(ids[-2])
-
                 if fill == "BLACK":
                     drawnCount = drawnCount + 1
 
@@ -71,10 +70,12 @@ def updateVolume():
 
 
 def addLine(event):
+    ids = canvas.find_overlapping(event.x, event.y, event.x, event.y)
+
     if (brushColor.upper() == "BLACK"):
-        canvas.create_oval((event.x, event.y, event.x, event.y), fill=brushColor, outline=brushColor, width=5)
+        if len(ids) == 0:
+            canvas.create_oval((event.x, event.y, event.x, event.y), fill=brushColor, outline=brushColor, width=BRUSH_WIDTH)
     else:
-        ids = canvas.find_overlapping(event.x, event.y, event.x, event.y)
         if len(ids) > 0:
             canvas.delete(ids[-1])
 
